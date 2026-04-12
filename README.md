@@ -6,10 +6,10 @@ The old POC remains a learning/reference project. This repo is the clean product
 
 ## Product Goal
 
-Build a scraper-first betting intelligence platform with two agent layers:
+Build a scraper-first betting and market-intelligence platform with two agent layers:
 
 1. Scraper Agent: assists with extraction quality, selector recovery, and scraping review.
-2. Decision Agent: reasons over structured betting data and produces explainable signals.
+2. Decision Agent: reasons over structured data and produces explainable signals.
 
 ## Core Build Order
 
@@ -28,10 +28,11 @@ Build a scraper-first betting intelligence platform with two agent layers:
 - `docs/architecture/folder-guide.md`
 - `docs/architecture/data-flow.md`
 - `docs/architecture/architecture-decisions.md`
+- `docs/architecture/scraper-ui-design.md`
 - `docs/roadmap/daily-2-hour-plan.md`
 - `docs/roadmap/production-timeline.md`
 - `docs/operations/working-rules.md`
 
 ## Current Milestone
 
-We are finalizing architecture before implementation. The next implementation milestone is the Streamlit scraper UI and the first Forebet scraper flow.
+We are finalizing the scraper UI design before implementation. The next implementation milestone is the first Streamlit scraper console and the first Forebet scraper flow.

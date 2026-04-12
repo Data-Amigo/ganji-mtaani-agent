@@ -9,7 +9,7 @@
 ## Day 2: Architecture Finalization
 
 - Review folder guide.
-- Confirm source list: Forebet first, Polymarket second.
+- Confirm source list: Forebet first, Polymarket second as a strategic market-intelligence source.
 - Confirm scraper-first build order.
 
 ## Day 3: Scraper UI Design
@@ -17,6 +17,7 @@
 - Sketch Streamlit scraper UI.
 - Define fields shown after scraping.
 - Define scraper run status states.
+- Document future auto-refresh and scheduled scraping.
 
 ## Day 4: Browser Automation Choice
 
