@@ -1,0 +1,43 @@
+# Daily 2-Hour Plan
+
+## Day 1: Repo Setup
+
+- Confirm repo folder and naming.
+- Add README, docs, `.gitignore`, `.env.example`, `pyproject.toml`, and `docker-compose.yml`.
+- Initialize git and prepare GitHub repo connection.
+
+## Day 2: Architecture Finalization
+
+- Review folder guide.
+- Confirm source list: Forebet first, Polymarket second.
+- Confirm scraper-first build order.
+
+## Day 3: Scraper UI Design
+
+- Sketch Streamlit scraper UI.
+- Define fields shown after scraping.
+- Define scraper run status states.
+
+## Day 4: Browser Automation Choice
+
+- Choose Playwright or Selenium.
+- Install and test browser automation locally.
+- Fetch one simple page.
+
+## Day 5: Forebet First Fetch
+
+- Build first Forebet scraper skeleton.
+- Save raw HTML snapshot.
+- Inspect page structure.
+
+## Day 6: Forebet First Parse
+
+- Extract first real fields.
+- Preview rows in Streamlit.
+- Document selector assumptions.
+
+## Day 7: Weekly Review
+
+- Review progress.
+- Clean docs.
+- Decide next week’s top tasks.

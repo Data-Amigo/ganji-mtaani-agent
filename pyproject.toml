@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ganji-mtaani-agent"
+version = "0.1.0"
+description = "Scraper-first betting intelligence and agent platform."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12.3",
+  "httpx>=0.27.0",
+  "openai>=1.30.0",
+  "playwright>=1.44.0",
+  "pydantic-settings>=2.2.1",
+  "python-dotenv>=1.0.1",
+  "python-telegram-bot>=21.1.1",
+  "sqlalchemy>=2.0.30",
+  "psycopg[binary]>=3.1.19",
+  "streamlit>=1.33.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0",
+  "ruff>=0.4.4"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
