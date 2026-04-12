@@ -26,6 +26,12 @@ Build a scraper-first betting intelligence platform with two agent layers:
 
 - `docs/architecture/project-overview.md`
 - `docs/architecture/folder-guide.md`
+- `docs/architecture/data-flow.md`
+- `docs/architecture/architecture-decisions.md`
 - `docs/roadmap/daily-2-hour-plan.md`
 - `docs/roadmap/production-timeline.md`
 - `docs/operations/working-rules.md`
+
+## Current Milestone
+
+We are finalizing architecture before implementation. The next implementation milestone is the Streamlit scraper UI and the first Forebet scraper flow.
