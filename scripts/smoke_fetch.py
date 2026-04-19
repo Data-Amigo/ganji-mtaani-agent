@@ -40,7 +40,7 @@ def main() -> None:
 
     The function performs four steps:
     1. Read command-line options.
-    2. Resolve the selected source and URL.
+    2. Resolve the selected source, URL, and browser settings.
     3. Call the reusable Playwright fetch_page function.
     4. Print a simple summary for debugging.
     """
@@ -53,26 +53,29 @@ def main() -> None:
     # --url lets us override the default source URL for testing.
     # --save-snapshot saves the raw rendered HTML under data/raw/.
     # --screenshot saves a PNG image of what the browser saw.
-    # --headed opens a visible browser window so we can inspect the page manually.
-    # --wait-until lets us test different Playwright load strategies.
-    # --settle-ms lets JavaScript render after the initial page load.
+    # --headed forces a visible browser window.
+    # --headless forces a hidden browser window.
+    # --wait-until lets us override the source's default load strategy.
+    # --settle-ms lets us override the source's default JavaScript settle wait.
     parser = argparse.ArgumentParser(description="Smoke test the Playwright browser fetcher.")
     parser.add_argument("--source", choices=["forebet", "polymarket"], default="forebet")
     parser.add_argument("--url", help="Optional URL override for the selected source.")
     parser.add_argument("--save-snapshot", action="store_true")
     parser.add_argument("--screenshot", action="store_true", help="Save a PNG screenshot of the loaded page.")
-    parser.add_argument("--headed", action="store_true", help="Open a visible browser window for debugging.")
+
+    browser_mode = parser.add_mutually_exclusive_group()
+    browser_mode.add_argument("--headed", action="store_true", help="Force a visible browser window.")
+    browser_mode.add_argument("--headless", action="store_true", help="Force a hidden browser window.")
+
     parser.add_argument(
         "--wait-until",
         choices=["commit", "domcontentloaded", "load", "networkidle"],
-        default="domcontentloaded",
-        help="Playwright page load state. Use domcontentloaded first for script-heavy sites.",
+        help="Override the source's default Playwright page load state.",
     )
     parser.add_argument(
         "--settle-ms",
         type=int,
-        default=3000,
-        help="Extra milliseconds to wait after the page reaches the selected load state.",
+        help="Override the source's default extra wait after page load.",
     )
     parser.add_argument(
         "--timeout-ms",
@@ -90,6 +93,21 @@ def main() -> None:
     # without editing Python code.
     source = get_source_config(args.source)
     url = args.url or source.default_url
+
+    # -------------------------------------------------------------------------
+    # Browser Setting Resolution
+    # -------------------------------------------------------------------------
+    # Each source can have sensible defaults, but the CLI can override them.
+    # For example, Forebet currently defaults to headed mode during development.
+    wait_until = args.wait_until or source.default_wait_until
+    settle_ms = args.settle_ms if args.settle_ms is not None else source.default_settle_ms
+    headless = source.default_headless
+
+    if args.headed:
+        headless = False
+    elif args.headless:
+        headless = True
+
     snapshot_path = None
     screenshot_path = None
 
@@ -114,9 +132,9 @@ def main() -> None:
     result = fetch_page(
         url,
         timeout_ms=args.timeout_ms,
-        wait_until=args.wait_until,
-        settle_ms=args.settle_ms,
-        headless=not args.headed,
+        wait_until=wait_until,
+        settle_ms=settle_ms,
+        headless=headless,
         snapshot_path=snapshot_path,
         screenshot_path=screenshot_path,
     )
@@ -131,6 +149,9 @@ def main() -> None:
     print(f"title: {result.title}")
     print(f"html_length: {result.html_length}")
     print(f"duration_ms: {result.duration_ms}")
+    print(f"wait_until: {wait_until}")
+    print(f"settle_ms: {settle_ms}")
+    print(f"headless: {headless}")
     print(f"snapshot_path: {result.snapshot_path}")
     print(f"screenshot_path: {result.screenshot_path}")
 

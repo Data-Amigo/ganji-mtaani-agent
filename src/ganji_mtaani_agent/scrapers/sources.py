@@ -4,7 +4,7 @@ Author: Data-Amigo
 Date: 2026-04-16
 Description:
 This is the source registry. It tells the app which websites/data sources exist,
-their default URLs, display names, and descriptions.
+their default URLs, display names, descriptions, and default browser settings.
 """
 
 from dataclasses import dataclass
@@ -19,6 +19,7 @@ from dataclasses import dataclass
 # - The app needs to know which sources are available.
 # - The UI needs a display name and default URL for each source.
 # - The scraper needs a stable internal source name for logs and routing.
+# - Each source can have different browser behavior during development.
 # - Future sources can be added without changing the UI structure first.
 @dataclass(frozen=True, slots=True)
 class SourceConfig:
@@ -29,12 +30,18 @@ class SourceConfig:
         display_name: Human-readable name shown in the Streamlit UI.
         default_url: First URL to use when this source is selected.
         description: Short explanation of the source's role in the project.
+        default_wait_until: Default Playwright load state for this source.
+        default_settle_ms: Extra wait time after page load for JavaScript rendering.
+        default_headless: Whether this source should run hidden by default.
     """
 
     name: str
     display_name: str
     default_url: str
     description: str
+    default_wait_until: str = "domcontentloaded"
+    default_settle_ms: int = 3_000
+    default_headless: bool = True
 
 
 # =============================================================================
@@ -46,20 +53,26 @@ class SourceConfig:
 # - The dictionary key is the internal source name, for example "forebet".
 # - The dictionary value is a SourceConfig object with the source details.
 #
-# When we build the Streamlit source selector, it can read from this dictionary
-# to know which sources exist and what default URL to prefill.
+# Forebet currently works better in headed mode during development because
+# headless mode triggers a security verification page.
 SOURCES: dict[str, SourceConfig] = {
     "forebet": SourceConfig(
         name="forebet",
         display_name="Forebet",
         default_url="https://www.forebet.com/en/football-tips-and-predictions-for-today",
         description="Football prediction source for the first betting workflow.",
+        default_wait_until="domcontentloaded",
+        default_settle_ms=15_000,
+        default_headless=False,
     ),
     "polymarket": SourceConfig(
         name="polymarket",
         display_name="Polymarket",
         default_url="https://polymarket.com/markets",
         description="Strategic prediction-market source for broader market intelligence.",
+        default_wait_until="domcontentloaded",
+        default_settle_ms=5_000,
+        default_headless=True,
     ),
 }
 
