@@ -21,24 +21,38 @@ python -m pip install -e .[dev]
 python -m playwright install chromium
 ```
 
-## 4. Run the Browser Smoke Test
+## 4. Run Forebet Smoke Tests
 
 Forebet currently defaults to headed mode during development because headless mode triggers a security verification page.
+
+Basketball is the default Forebet target:
 
 ```powershell
 python scripts\smoke_fetch.py --source forebet --save-snapshot --screenshot
 ```
 
+Explicit basketball target:
+
+```powershell
+python scripts\smoke_fetch.py --source forebet --target basketball_today --save-snapshot --screenshot
+```
+
+Football target:
+
+```powershell
+python scripts\smoke_fetch.py --source forebet --target football_today --save-snapshot --screenshot
+```
+
 To force headless mode for comparison:
 
 ```powershell
-python scripts\smoke_fetch.py --source forebet --headless --save-snapshot --screenshot
+python scripts\smoke_fetch.py --source forebet --target basketball_today --headless --save-snapshot --screenshot
 ```
 
-For Polymarket:
+## 5. Run Polymarket Smoke Test
 
 ```powershell
-python scripts\smoke_fetch.py --source polymarket --save-snapshot --screenshot
+python scripts\smoke_fetch.py --source polymarket --target markets --save-snapshot --screenshot
 ```
 
 ## Notes

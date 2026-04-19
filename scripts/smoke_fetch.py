@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from ganji_mtaani_agent.scrapers.browser import fetch_page
-from ganji_mtaani_agent.scrapers.sources import get_source_config
+from ganji_mtaani_agent.scrapers.sources import SOURCES, get_source_config, get_source_target
 
 
 # =============================================================================
@@ -31,7 +31,7 @@ from ganji_mtaani_agent.scrapers.sources import get_source_config
 # =============================================================================
 # This script can be run from PowerShell like:
 #
-# python scripts\smoke_fetch.py --source forebet --save-snapshot
+# python scripts\smoke_fetch.py --source forebet --target basketball_today
 #
 # It is useful before Streamlit exists because it tests the browser foundation
 # directly from the terminal.
@@ -40,7 +40,7 @@ def main() -> None:
 
     The function performs four steps:
     1. Read command-line options.
-    2. Resolve the selected source, URL, and browser settings.
+    2. Resolve the selected source, target, URL, and browser settings.
     3. Call the reusable Playwright fetch_page function.
     4. Print a simple summary for debugging.
     """
@@ -50,7 +50,8 @@ def main() -> None:
     # -------------------------------------------------------------------------
     # argparse defines what options the script accepts from the terminal.
     # --source chooses the registered source.
-    # --url lets us override the default source URL for testing.
+    # --target chooses a target page under the selected source.
+    # --url lets us override the target URL for testing.
     # --save-snapshot saves the raw rendered HTML under data/raw/.
     # --screenshot saves a PNG image of what the browser saw.
     # --headed forces a visible browser window.
@@ -58,8 +59,9 @@ def main() -> None:
     # --wait-until lets us override the source's default load strategy.
     # --settle-ms lets us override the source's default JavaScript settle wait.
     parser = argparse.ArgumentParser(description="Smoke test the Playwright browser fetcher.")
-    parser.add_argument("--source", choices=["forebet", "polymarket"], default="forebet")
-    parser.add_argument("--url", help="Optional URL override for the selected source.")
+    parser.add_argument("--source", choices=sorted(SOURCES), default="forebet")
+    parser.add_argument("--target", help="Optional target key under the selected source.")
+    parser.add_argument("--url", help="Optional URL override for the selected source target.")
     parser.add_argument("--save-snapshot", action="store_true")
     parser.add_argument("--screenshot", action="store_true", help="Save a PNG screenshot of the loaded page.")
 
@@ -86,13 +88,13 @@ def main() -> None:
     args = parser.parse_args()
 
     # -------------------------------------------------------------------------
-    # Source and URL Resolution
+    # Source, Target, and URL Resolution
     # -------------------------------------------------------------------------
-    # The selected source gives us a default URL. If --url is provided, we use
-    # that instead. This is how we test different pages from the same source
-    # without editing Python code.
+    # The selected source gives us source-wide defaults. The selected target gives
+    # us the exact page URL, sport/category, and target display name.
     source = get_source_config(args.source)
-    url = args.url or source.default_url
+    target = get_source_target(source, args.target)
+    url = args.url or target.url
 
     # -------------------------------------------------------------------------
     # Browser Setting Resolution
@@ -117,12 +119,13 @@ def main() -> None:
     # A timestamped filename prevents one smoke test from overwriting another.
     # data/raw/ is ignored by git because snapshots and screenshots can be large.
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    artifact_folder = Path("data") / "raw" / args.source / target.name
 
     if args.save_snapshot:
-        snapshot_path = Path("data") / "raw" / args.source / f"{timestamp}.html"
+        snapshot_path = artifact_folder / f"{timestamp}.html"
 
     if args.screenshot:
-        screenshot_path = Path("data") / "raw" / args.source / f"{timestamp}.png"
+        screenshot_path = artifact_folder / f"{timestamp}.png"
 
     # -------------------------------------------------------------------------
     # Browser Fetch
@@ -144,6 +147,8 @@ def main() -> None:
     # -------------------------------------------------------------------------
     # Keep output simple so we can quickly see if the browser layer worked.
     print(f"source: {source.display_name}")
+    print(f"target: {target.display_name}")
+    print(f"sport: {target.sport}")
     print(f"url: {result.url}")
     print(f"status: {result.status}")
     print(f"title: {result.title}")
