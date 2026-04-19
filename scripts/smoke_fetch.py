@@ -52,12 +52,16 @@ def main() -> None:
     # --source chooses the registered source.
     # --url lets us override the default source URL for testing.
     # --save-snapshot saves the raw rendered HTML under data/raw/.
+    # --screenshot saves a PNG image of what the browser saw.
+    # --headed opens a visible browser window so we can inspect the page manually.
     # --wait-until lets us test different Playwright load strategies.
     # --settle-ms lets JavaScript render after the initial page load.
     parser = argparse.ArgumentParser(description="Smoke test the Playwright browser fetcher.")
     parser.add_argument("--source", choices=["forebet", "polymarket"], default="forebet")
     parser.add_argument("--url", help="Optional URL override for the selected source.")
     parser.add_argument("--save-snapshot", action="store_true")
+    parser.add_argument("--screenshot", action="store_true", help="Save a PNG screenshot of the loaded page.")
+    parser.add_argument("--headed", action="store_true", help="Open a visible browser window for debugging.")
     parser.add_argument(
         "--wait-until",
         choices=["commit", "domcontentloaded", "load", "networkidle"],
@@ -87,15 +91,20 @@ def main() -> None:
     source = get_source_config(args.source)
     url = args.url or source.default_url
     snapshot_path = None
+    screenshot_path = None
 
     # -------------------------------------------------------------------------
-    # Optional Snapshot Path
+    # Optional Debug Artifact Paths
     # -------------------------------------------------------------------------
     # A timestamped filename prevents one smoke test from overwriting another.
-    # data/raw/ is ignored by git because snapshots can become large.
+    # data/raw/ is ignored by git because snapshots and screenshots can be large.
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+
     if args.save_snapshot:
-        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         snapshot_path = Path("data") / "raw" / args.source / f"{timestamp}.html"
+
+    if args.screenshot:
+        screenshot_path = Path("data") / "raw" / args.source / f"{timestamp}.png"
 
     # -------------------------------------------------------------------------
     # Browser Fetch
@@ -107,7 +116,9 @@ def main() -> None:
         timeout_ms=args.timeout_ms,
         wait_until=args.wait_until,
         settle_ms=args.settle_ms,
+        headless=not args.headed,
         snapshot_path=snapshot_path,
+        screenshot_path=screenshot_path,
     )
 
     # -------------------------------------------------------------------------
@@ -121,6 +132,7 @@ def main() -> None:
     print(f"html_length: {result.html_length}")
     print(f"duration_ms: {result.duration_ms}")
     print(f"snapshot_path: {result.snapshot_path}")
+    print(f"screenshot_path: {result.screenshot_path}")
 
     # -------------------------------------------------------------------------
     # Warning and Error Output

@@ -41,6 +41,7 @@ class BrowserFetchResult:
         html: Rendered HTML collected from the browser.
         html_length: Character length of the rendered HTML.
         snapshot_path: Optional file path where raw HTML was saved.
+        screenshot_path: Optional file path where a page screenshot was saved.
         warnings: Non-fatal issues discovered during the fetch.
         error: Fatal error message if the fetch failed.
     """
@@ -54,6 +55,7 @@ class BrowserFetchResult:
     html: str = ""
     html_length: int = 0
     snapshot_path: str | None = None
+    screenshot_path: str | None = None
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
 
@@ -66,6 +68,36 @@ class BrowserFetchResult:
         """
 
         return self.status == "success"
+
+
+# =============================================================================
+# Security Challenge Detection Rules
+# =============================================================================
+# These phrases help us detect when the browser loaded a security verification
+# page instead of the real target content.
+#
+# Important:
+# - This does not bypass anything.
+# - It only warns us that the HTML may not contain useful source data.
+# - Later, the Streamlit UI can show this warning clearly to the user.
+#
+# We split title phrases from HTML phrases because the page title is much more
+# reliable. Some real pages may still contain challenge-related JavaScript text
+# in the HTML after verification has passed.
+SECURITY_CHALLENGE_TITLE_PHRASES = (
+    "just a moment",
+    "checking your browser",
+    "security verification",
+)
+
+SECURITY_CHALLENGE_HTML_PHRASES = (
+    "performing security verification",
+    "verify you are not a bot",
+    "security service to protect against malicious bots",
+    "cf-challenge",
+    "cf-turnstile",
+    "challenge-platform",
+)
 
 
 # =============================================================================
@@ -84,6 +116,7 @@ def fetch_page(
     settle_ms: int = 3_000,
     headless: bool = True,
     snapshot_path: str | Path | None = None,
+    screenshot_path: str | Path | None = None,
 ) -> BrowserFetchResult:
     """Open a URL with Chromium and return a structured fetch result.
 
@@ -97,6 +130,7 @@ def fetch_page(
             This gives JavaScript-heavy pages time to render useful content.
         headless: Whether to run the browser without a visible window.
         snapshot_path: Optional path for saving the raw rendered HTML.
+        screenshot_path: Optional path for saving a screenshot of the page.
 
     Returns:
         BrowserFetchResult containing HTML, timing, status, and error details.
@@ -137,6 +171,10 @@ def fetch_page(
             # After the page settles, collect basic browser evidence.
             title = page.title()
             html = page.content()
+
+            # Screenshot capture is useful when HTML alone is not enough to
+            # understand what the browser saw, especially with verification pages.
+            saved_screenshot_path = _save_screenshot(screenshot_path, page)
             browser.close()
 
         # ---------------------------------------------------------------------
@@ -153,6 +191,8 @@ def fetch_page(
         if not html.strip():
             warnings.append("Page returned empty HTML.")
 
+        warnings.extend(_detect_security_challenge(title=title, html=html))
+
         return BrowserFetchResult(
             url=url,
             status="success",
@@ -163,6 +203,7 @@ def fetch_page(
             html=html,
             html_length=len(html),
             snapshot_path=saved_snapshot_path,
+            screenshot_path=saved_screenshot_path,
             warnings=warnings,
         )
 
@@ -175,6 +216,46 @@ def fetch_page(
         return _failed_result(url, started_at, start, f"Timed out loading page: {exc}")
     except Exception as exc:
         return _failed_result(url, started_at, start, str(exc))
+
+
+# =============================================================================
+# Security Challenge Detection Helper
+# =============================================================================
+# This helper checks whether the returned page looks like a security verification
+# page. The browser may technically succeed, but the content may still be unusable
+# for scraping if the site shows an anti-bot challenge instead of real data.
+def _detect_security_challenge(title: str, html: str) -> list[str]:
+    """Return warnings if the page looks like a bot/security challenge.
+
+    Args:
+        title: Browser page title after loading.
+        html: Rendered HTML collected from the browser.
+
+    Returns:
+        A list of warning messages. Empty list means no challenge was detected.
+    """
+
+    normalized_title = title.lower().strip()
+    normalized_html = html.lower()
+
+    # Title-based detection is the strongest signal. If the visible browser title
+    # says "Just a moment", we almost certainly loaded a verification page.
+    if any(phrase in normalized_title for phrase in SECURITY_CHALLENGE_TITLE_PHRASES):
+        return [
+            "Possible anti-bot/security verification page detected from page title. "
+            "The browser loaded HTML, but it may not be the real source content."
+        ]
+
+    # HTML-based detection is weaker. We only use phrases that strongly indicate
+    # a verification page, and we avoid broad words like "cloudflare" because
+    # real pages can include those in scripts after verification passes.
+    if any(phrase in normalized_html for phrase in SECURITY_CHALLENGE_HTML_PHRASES):
+        return [
+            "Possible anti-bot/security verification page detected from page HTML. "
+            "Inspect the saved snapshot or screenshot before parsing this page."
+        ]
+
+    return []
 
 
 # =============================================================================
@@ -200,6 +281,31 @@ def _save_snapshot(snapshot_path: str | Path | None, html: str) -> str | None:
     path = Path(snapshot_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html, encoding="utf-8")
+    return str(path)
+
+
+# =============================================================================
+# Screenshot Helper
+# =============================================================================
+# Screenshots are visual debugging evidence. They help us see whether the browser
+# reached the real page, a blank page, a consent modal, or a security challenge.
+def _save_screenshot(screenshot_path: str | Path | None, page) -> str | None:
+    """Save a full-page screenshot when a screenshot path is provided.
+
+    Args:
+        screenshot_path: File path where the screenshot should be written, or None.
+        page: Active Playwright page object.
+
+    Returns:
+        The saved screenshot path as a string, or None if screenshots are disabled.
+    """
+
+    if screenshot_path is None:
+        return None
+
+    path = Path(screenshot_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(path), full_page=True)
     return str(path)
 
 
@@ -232,3 +338,4 @@ def _failed_result(url: str, started_at: datetime, start: float, error: str) -> 
         duration_ms=duration_ms,
         error=error,
     )
+
