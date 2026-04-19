@@ -31,8 +31,9 @@ Build a scraper-first betting and market-intelligence platform with two agent la
 - `docs/architecture/scraper-ui-design.md`
 - `docs/roadmap/daily-2-hour-plan.md`
 - `docs/roadmap/production-timeline.md`
+- `docs/operations/local-setup.md`
 - `docs/operations/working-rules.md`
 
 ## Current Milestone
 
-We are finalizing the scraper UI design before implementation. The next implementation milestone is the first Streamlit scraper console and the first Forebet scraper flow.
+We are implementing the browser automation foundation with Playwright. The next milestone is connecting this foundation to the first Streamlit scraper console.
