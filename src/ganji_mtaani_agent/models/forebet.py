@@ -51,3 +51,62 @@ class ForebetBasketballPrediction:
     remaining_tokens: list[str]
     raw_text: str
     confidence: float
+
+
+# =============================================================================
+# Forebet Football Prediction Model
+# =============================================================================
+# This model stores the stable fields we currently understand from a Forebet
+# football row. Anything after the stable core remains in remaining_tokens until
+# we decide to parse live state and extra coefficient details later.
+@dataclass(slots=True)
+class ForebetFootballPrediction:
+    """Structured football prediction row extracted from Forebet.
+
+    Attributes:
+        source: Source name. For this parser it will be "forebet".
+        sport: Sport name. For this parser it will be "football".
+        league: League code or competition label, for example "It1".
+        home_team: Home team name.
+        away_team: Away team name.
+        event_datetime: Date and time string as seen in the snapshot.
+        prob_1: Probability for home win.
+        prob_x: Probability for draw.
+        prob_2: Probability for away win.
+        pred_outcome: Predicted outcome marker, usually "1", "X", or "2".
+        predicted_home_score: Predicted home team score.
+        predicted_away_score: Predicted away team score.
+        correct_score_text: Combined correct-score text such as "1 - 2".
+        avg_goals: Average goals value.
+        weather: Weather string as shown by Forebet.
+        coef_1: Coefficient for home win.
+        coef_x: Coefficient for draw.
+        coef_2: Coefficient for away win.
+        coef_extra: Additional coefficient-style value shown after 1/X/2.
+        remaining_tokens: Tokens after the stable core.
+        raw_text: Original row text before structured parsing.
+        confidence: Extraction confidence score for the row.
+    """
+
+    source: str
+    sport: str
+    league: str
+    home_team: str
+    away_team: str
+    event_datetime: str
+    prob_1: int | None
+    prob_x: int | None
+    prob_2: int | None
+    pred_outcome: str | None
+    predicted_home_score: int | None
+    predicted_away_score: int | None
+    correct_score_text: str | None
+    avg_goals: float | None
+    weather: str | None
+    coef_1: float | None
+    coef_x: float | None
+    coef_2: float | None
+    coef_extra: float | None
+    remaining_tokens: list[str]
+    raw_text: str
+    confidence: float
