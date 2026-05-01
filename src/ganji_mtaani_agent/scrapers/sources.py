@@ -45,14 +45,6 @@ class SourceTarget:
 # =============================================================================
 # Source Configuration Model
 # =============================================================================
-# SourceConfig defines the shape of one supported website/source.
-#
-# Why this exists:
-# - The app needs to know which sources are available.
-# - The UI needs a display name and default target for each source.
-# - The scraper needs a stable internal source name for logs and routing.
-# - Each source can have different browser behavior during development.
-# - Future sources can be added without changing the UI structure first.
 @dataclass(frozen=True, slots=True)
 class SourceConfig:
     """Configuration details for one supported scraping source.
@@ -79,11 +71,7 @@ class SourceConfig:
 
     @property
     def default_url(self) -> str:
-        """Return the URL for the source's default target.
-
-        This keeps backward compatibility with older code that expects a source
-        to have one default URL, while still allowing multiple targets.
-        """
+        """Return the URL for the source's default target."""
 
         return self.targets[self.default_target].url
 
@@ -91,14 +79,8 @@ class SourceConfig:
 # =============================================================================
 # Supported Source Registry
 # =============================================================================
-# SOURCES is the central list of websites the project currently understands.
-#
-# Important idea:
-# - The dictionary key is the internal source name, for example "forebet".
-# - The dictionary value is a SourceConfig object with source and target details.
-#
-# Forebet currently works better in headed mode during development because
-# headless mode triggers a security verification page.
+# Forebet and SportPesa currently work better in headed mode during development
+# because headless mode triggers security verification pages.
 SOURCES: dict[str, SourceConfig] = {
     "forebet": SourceConfig(
         name="forebet",
@@ -147,17 +129,24 @@ SOURCES: dict[str, SourceConfig] = {
         name="sportpesa",
         display_name="SportPesa",
         default_target="football_today",
-        description="Bookmaker odds source for football fixtures and 1/X/2 market prices.",
+        description="Bookmaker odds source for football and basketball fixtures with visible market prices.",
         default_wait_until="domcontentloaded",
-        default_settle_ms=5_000,
-        default_headless=True,
+        default_settle_ms=10_000,
+        default_headless=False,
         targets={
             "football_today": SourceTarget(
                 name="football_today",
                 display_name="Football Odds Today",
                 url="https://www.sportpesa.co.ke/sports/football",
                 sport="football",
-                description="SportPesa football fixtures and visible 1/X/2 odds.",
+                description="SportPesa football fixtures with 3-way, double chance, totals, and BTTS odds.",
+            ),
+            "basketball_today": SourceTarget(
+                name="basketball_today",
+                display_name="Basketball Odds Today",
+                url="https://www.ke.sportpesa.com/en/sports-betting/basketball-2/today-games/",
+                sport="basketball",
+                description="SportPesa basketball fixtures with 2-way odds including overtime.",
             ),
         },
     ),
@@ -167,25 +156,8 @@ SOURCES: dict[str, SourceConfig] = {
 # =============================================================================
 # Source Lookup Helper
 # =============================================================================
-# This helper gives the rest of the app one safe way to get source details.
-# Instead of accessing SOURCES directly everywhere, callers can use this function
-# and receive a clear error if the source name is not supported.
 def get_source_config(source_name: str) -> SourceConfig:
-    """Return the configuration object for a supported source.
-
-    Args:
-        source_name: Internal source key, such as "forebet" or "polymarket".
-
-    Returns:
-        The SourceConfig object for the requested source.
-
-    Raises:
-        ValueError: If the source name is not registered in SOURCES.
-
-    Example:
-        source = get_source_config("forebet")
-        print(source.default_url)
-    """
+    """Return the configuration object for a supported source."""
 
     try:
         return SOURCES[source_name]
@@ -197,21 +169,8 @@ def get_source_config(source_name: str) -> SourceConfig:
 # =============================================================================
 # Target Lookup Helper
 # =============================================================================
-# This helper returns one specific target page for a source. The Streamlit UI and
-# smoke script can use it to fetch basketball, football, or future target pages.
 def get_source_target(source: SourceConfig, target_name: str | None = None) -> SourceTarget:
-    """Return a target page config from a source.
-
-    Args:
-        source: SourceConfig object returned by get_source_config().
-        target_name: Optional target key. If omitted, the source default is used.
-
-    Returns:
-        SourceTarget object for the requested target.
-
-    Raises:
-        ValueError: If the target does not exist under the selected source.
-    """
+    """Return a target page config from a source."""
 
     selected_target = target_name or source.default_target
 

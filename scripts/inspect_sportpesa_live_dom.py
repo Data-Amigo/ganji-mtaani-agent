@@ -1,9 +1,9 @@
 """This is the inspect_sportpesa_live_dom.py file.
 
 Author: Data-Amigo
-Date: 2026-04-30
+Date: 2026-05-01
 Description:
-This script opens the SportPesa football page in Playwright, waits for the live
+This script opens a SportPesa target page in Playwright, waits for the live
 page to render, prints DOM text clues from likely fixture containers, and logs
 network responses that may contain odds or fixture data.
 """
@@ -43,17 +43,18 @@ def _clean_text(value: str) -> str:
 # Main Live Inspection Function
 # =============================================================================
 def main() -> None:
-    """Inspect the live SportPesa football page after browser rendering."""
+    """Inspect a live SportPesa target page after browser rendering."""
 
-    parser = argparse.ArgumentParser(description="Inspect the live SportPesa football DOM and network activity.")
-    parser.add_argument("--url", help="Optional URL override for SportPesa football page.")
+    parser = argparse.ArgumentParser(description="Inspect a live SportPesa DOM and network activity.")
+    parser.add_argument("--target", default="football_today", help="SportPesa target key to inspect.")
+    parser.add_argument("--url", help="Optional URL override for the selected SportPesa page.")
     parser.add_argument("--settle-ms", type=int, default=12000, help="Extra time to wait after initial load.")
     parser.add_argument("--timeout-ms", type=int, default=60000, help="Maximum page load timeout.")
     parser.add_argument("--response-limit", type=int, default=20, help="Maximum matching response URLs to print.")
     args = parser.parse_args()
 
     source = get_source_config("sportpesa")
-    target = get_source_target(source, "football_today")
+    target = get_source_target(source, args.target)
     url = args.url or target.url
 
     matching_responses: list[str] = []
@@ -75,6 +76,8 @@ def main() -> None:
                     "prematch",
                     "api",
                     "odds",
+                    "basketball",
+                    "football",
                 ]
             )
             if interesting and response_url not in matching_responses:
@@ -87,11 +90,6 @@ def main() -> None:
         title = page.title()
         html = page.content()
 
-        # ---------------------------------------------------------------------
-        # DOM Inspection
-        # ---------------------------------------------------------------------
-        # Pull visible text from the most promising repeated containers so we can
-        # see whether fixtures and odds exist in the rendered DOM.
         candidate_selectors = [
             ".event-row-container",
             ".event-row",
@@ -116,10 +114,6 @@ def main() -> None:
                 if text:
                     selector_texts[selector].append(text)
 
-        # ---------------------------------------------------------------------
-        # JSON-LD Inspection
-        # ---------------------------------------------------------------------
-        # SportPesa embeds useful fixture identity in ld+json scripts.
         json_ld_scripts = page.locator('script[type="application/ld+json"]')
         json_ld_count = min(json_ld_scripts.count(), 10)
         json_ld_samples: list[dict[str, str | None]] = []
@@ -150,6 +144,7 @@ def main() -> None:
 
     print(f"source: {source.display_name}")
     print(f"target: {target.display_name}")
+    print(f"sport: {target.sport}")
     print(f"url: {url}")
     print(f"title: {title}")
     print(f"html_length: {len(html)}")
