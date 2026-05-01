@@ -1,0 +1,59 @@
+Metadata-Version: 2.4
+Name: ganji-mtaani-agent
+Version: 0.1.0
+Summary: Scraper-first betting intelligence and agent platform.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: beautifulsoup4>=4.12.3
+Requires-Dist: httpx>=0.27.0
+Requires-Dist: openai>=1.30.0
+Requires-Dist: playwright>=1.44.0
+Requires-Dist: pydantic-settings>=2.2.1
+Requires-Dist: python-dotenv>=1.0.1
+Requires-Dist: python-telegram-bot>=21.1.1
+Requires-Dist: sqlalchemy>=2.0.30
+Requires-Dist: psycopg[binary]>=3.1.19
+Requires-Dist: streamlit>=1.33.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2.0; extra == "dev"
+Requires-Dist: ruff>=0.4.4; extra == "dev"
+
+# gAnji Mtaani Agent
+
+`gAnji Mtaani Agent` is the production build of project gAnji.
+
+The old POC remains a learning/reference project. This repo is the clean production system.
+
+## Product Goal
+
+Build a scraper-first betting and market-intelligence platform with two agent layers:
+
+1. Scraper Agent: assists with extraction quality, selector recovery, and scraping review.
+2. Decision Agent: reasons over structured data and produces explainable signals.
+
+## Core Build Order
+
+1. Project setup and documentation
+2. Scraper engine with Streamlit UI
+3. Parsing and data normalization
+4. PostgreSQL storage
+5. Prediction engine
+6. Telegram and dashboard delivery
+7. Scraper Agent and Decision Agent
+8. Production hardening
+
+## Key Docs
+
+- `docs/architecture/project-overview.md`
+- `docs/architecture/folder-guide.md`
+- `docs/architecture/data-flow.md`
+- `docs/architecture/architecture-decisions.md`
+- `docs/architecture/scraper-ui-design.md`
+- `docs/roadmap/daily-2-hour-plan.md`
+- `docs/roadmap/production-timeline.md`
+- `docs/operations/local-setup.md`
+- `docs/operations/working-rules.md`
+
+## Current Milestone
+
+We are implementing the browser automation foundation with Playwright. The next milestone is connecting this foundation to the first Streamlit scraper console.

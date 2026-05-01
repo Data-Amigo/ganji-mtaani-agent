@@ -143,6 +143,24 @@ SOURCES: dict[str, SourceConfig] = {
             ),
         },
     ),
+    "sportpesa": SourceConfig(
+        name="sportpesa",
+        display_name="SportPesa",
+        default_target="football_today",
+        description="Bookmaker odds source for football fixtures and 1/X/2 market prices.",
+        default_wait_until="domcontentloaded",
+        default_settle_ms=5_000,
+        default_headless=True,
+        targets={
+            "football_today": SourceTarget(
+                name="football_today",
+                display_name="Football Odds Today",
+                url="https://www.sportpesa.co.ke/sports/football",
+                sport="football",
+                description="SportPesa football fixtures and visible 1/X/2 odds.",
+            ),
+        },
+    ),
 }
 
 

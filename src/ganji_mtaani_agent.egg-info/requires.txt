@@ -1,0 +1,14 @@
+beautifulsoup4>=4.12.3
+httpx>=0.27.0
+openai>=1.30.0
+playwright>=1.44.0
+pydantic-settings>=2.2.1
+python-dotenv>=1.0.1
+python-telegram-bot>=21.1.1
+sqlalchemy>=2.0.30
+psycopg[binary]>=3.1.19
+streamlit>=1.33.0
+
+[dev]
+pytest>=8.2.0
+ruff>=0.4.4
