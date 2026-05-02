@@ -8,21 +8,12 @@ their target pages, default URLs, display names, descriptions, and default
 browser settings.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 # =============================================================================
 # Source Target Model
 # =============================================================================
-# SourceTarget defines one specific page or data target under a source.
-#
-# Example:
-# - Forebet is the source.
-# - Forebet football today is one target.
-# - Forebet basketball today is another target.
-#
-# This prevents us from treating every page as a totally separate source while
-# still allowing each sport/page to have its own URL and parser behavior later.
 @dataclass(frozen=True, slots=True)
 class SourceTarget:
     """Configuration details for one target page under a source.
@@ -47,18 +38,7 @@ class SourceTarget:
 # =============================================================================
 @dataclass(frozen=True, slots=True)
 class SourceConfig:
-    """Configuration details for one supported scraping source.
-
-    Attributes:
-        name: Internal source key used by code, logs, and CLI arguments.
-        display_name: Human-readable name shown in the Streamlit UI.
-        default_target: Target key used when the caller does not choose one.
-        targets: Dictionary of target pages available under this source.
-        description: Short explanation of the source's role in the project.
-        default_wait_until: Default Playwright load state for this source.
-        default_settle_ms: Extra wait time after page load for JavaScript rendering.
-        default_headless: Whether this source should run hidden by default.
-    """
+    """Configuration details for one supported scraping source."""
 
     name: str
     display_name: str
@@ -79,9 +59,6 @@ class SourceConfig:
 # =============================================================================
 # Supported Source Registry
 # =============================================================================
-# Forebet, SportPesa, and likely Betika currently work better in headed mode
-# during development because bookmaker and prediction pages may use protection
-# or heavy client-side rendering that is easier to diagnose visibly.
 SOURCES: dict[str, SourceConfig] = {
     "forebet": SourceConfig(
         name="forebet",
@@ -173,6 +150,31 @@ SOURCES: dict[str, SourceConfig] = {
                 url="https://ke.betika.com/en-ke/sports/basketball-30",
                 sport="basketball",
                 description="Betika basketball odds page for current fixtures and markets.",
+            ),
+        },
+    ),
+    "mozzart": SourceConfig(
+        name="mozzart",
+        display_name="Mozzart",
+        default_target="football_live",
+        description="Bookmaker odds source for Mozzart Kenya live football and basketball fixtures.",
+        default_wait_until="domcontentloaded",
+        default_settle_ms=10_000,
+        default_headless=False,
+        targets={
+            "football_live": SourceTarget(
+                name="football_live",
+                display_name="Football Live Odds",
+                url="https://mobile.mozzartbet.co.ke/live/",
+                sport="football",
+                description="Mozzart live football fixtures with live score state, extra markets, and 1/X/2 odds.",
+            ),
+            "live_landing": SourceTarget(
+                name="live_landing",
+                display_name="Live Landing",
+                url="https://mobile.mozzartbet.co.ke/live/",
+                sport="multi_sport",
+                description="Mozzart live landing page used for initial football and basketball inspection.",
             ),
         },
     ),
