@@ -3,9 +3,9 @@
 Author: Data-Amigo
 Date: 2026-05-02
 Description:
-This parser module extracts the first stable football odds fields from the
-rendered Betika football page HTML. Betika is heavily app-rendered, so the V1
-parser intentionally works from the rendered body text sequence instead of
+This parser module extracts the first stable football and basketball odds
+fields from rendered Betika page HTML. Betika is heavily app-rendered, so the
+V1 parser intentionally works from the rendered body text sequence instead of
 relying on fragile CSS selectors.
 """
 
@@ -15,7 +15,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ganji_mtaani_agent.models.betika import BetikaFootballOdds
+from ganji_mtaani_agent.models.betika import BetikaBasketballOdds, BetikaFootballOdds
 
 
 # =============================================================================
@@ -58,46 +58,31 @@ def _looks_like_league_header(lines: list[str], index: int) -> bool:
 
     return (
         index + 3 < len(lines)
-        and lines[index + 1] == "•"
+        and lines[index + 1] == "\u2022"
         and lines[index + 3].isdigit()
         and not lines[index].startswith("Starts")
     )
 
 
-# =============================================================================
-# Main Betika Football Parser
-# =============================================================================
-def parse_betika_football(html: str) -> list[BetikaFootballOdds]:
-    """Parse Betika football odds from rendered page HTML.
-
-    Expected V1 text pattern per league section:
-    - League country
-    - Bullet separator
-    - League name
-    - Match count
-    - Repeated match blocks of:
-      Starts...
-      1 • X • 2
-      Home team
-      Away team
-      Home odds
-      Draw odds
-      Away odds
-      +extra markets
-    """
+def _parse_winner_rows(
+    html: str,
+    anchor_label: str,
+    sport: str,
+) -> list[dict[str, object]]:
+    """Parse repeated winner-style rows from a rendered Betika sport page."""
 
     lines = _extract_text_lines(html)
     if not lines:
         return []
 
     try:
-        start_index = lines.index("Both Teams To Score") + 1
+        start_index = lines.index(anchor_label) + 1
     except ValueError:
         start_index = 0
 
     index = start_index
     current_league = "Unknown League"
-    parsed_rows: list[BetikaFootballOdds] = []
+    parsed_rows: list[dict[str, object]] = []
 
     while index < len(lines):
         if _looks_like_league_header(lines, index):
@@ -107,7 +92,7 @@ def parse_betika_football(html: str) -> list[BetikaFootballOdds]:
 
         if index + 7 < len(lines) and lines[index].startswith("Starts"):
             market_header = lines[index + 1]
-            if market_header != "1 • X • 2":
+            if market_header != "1 \u2022 X \u2022 2":
                 index += 1
                 continue
 
@@ -124,20 +109,20 @@ def parse_betika_football(html: str) -> list[BetikaFootballOdds]:
 
             raw_tokens = lines[index : index + 8]
             parsed_rows.append(
-                BetikaFootballOdds(
-                    source="betika",
-                    sport="football",
-                    league=current_league,
-                    event_datetime_text=lines[index],
-                    home_team=home_team,
-                    away_team=away_team,
-                    home_odds=home_odds,
-                    draw_odds=draw_odds,
-                    away_odds=away_odds,
-                    extra_market_count=extra_market_count,
-                    raw_text=" | ".join(raw_tokens),
-                    confidence=0.95,
-                )
+                {
+                    "source": "betika",
+                    "sport": sport,
+                    "league": current_league,
+                    "event_datetime_text": lines[index],
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "home_odds": home_odds,
+                    "draw_odds": draw_odds,
+                    "away_odds": away_odds,
+                    "extra_market_count": extra_market_count,
+                    "raw_text": " | ".join(raw_tokens),
+                    "confidence": 0.95,
+                }
             )
             index += 8
             continue
@@ -145,3 +130,32 @@ def parse_betika_football(html: str) -> list[BetikaFootballOdds]:
         index += 1
 
     return parsed_rows
+
+
+# =============================================================================
+# Main Betika Parsers
+# =============================================================================
+def parse_betika_football(html: str) -> list[BetikaFootballOdds]:
+    """Parse Betika football odds from rendered page HTML."""
+
+    parsed_dicts = _parse_winner_rows(
+        html=html,
+        anchor_label="Both Teams To Score",
+        sport="football",
+    )
+    return [BetikaFootballOdds(**row) for row in parsed_dicts]
+
+
+def parse_betika_basketball(html: str) -> list[BetikaBasketballOdds]:
+    """Parse Betika basketball odds from rendered page HTML.
+
+    The current basketball page exposes a visible three-value winner-style row,
+    so V1 preserves the three displayed odds exactly as they appear.
+    """
+
+    parsed_dicts = _parse_winner_rows(
+        html=html,
+        anchor_label="Winner (Incl. Overtime)",
+        sport="basketball",
+    )
+    return [BetikaBasketballOdds(**row) for row in parsed_dicts]
