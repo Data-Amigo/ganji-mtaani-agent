@@ -79,8 +79,9 @@ class SourceConfig:
 # =============================================================================
 # Supported Source Registry
 # =============================================================================
-# Forebet and SportPesa currently work better in headed mode during development
-# because headless mode triggers security verification pages.
+# Forebet, SportPesa, and likely Betika currently work better in headed mode
+# during development because bookmaker and prediction pages may use protection
+# or heavy client-side rendering that is easier to diagnose visibly.
 SOURCES: dict[str, SourceConfig] = {
     "forebet": SourceConfig(
         name="forebet",
@@ -147,6 +148,31 @@ SOURCES: dict[str, SourceConfig] = {
                 url="https://www.ke.sportpesa.com/en/sports-betting/basketball-2/today-games/",
                 sport="basketball",
                 description="SportPesa basketball fixtures with 2-way odds including overtime.",
+            ),
+        },
+    ),
+    "betika": SourceConfig(
+        name="betika",
+        display_name="Betika",
+        default_target="football_today",
+        description="Bookmaker odds source for football and basketball fixtures from Betika.",
+        default_wait_until="domcontentloaded",
+        default_settle_ms=10_000,
+        default_headless=False,
+        targets={
+            "football_today": SourceTarget(
+                name="football_today",
+                display_name="Football Odds Today",
+                url="https://ke.betika.com/en-ke/sports/soccer-14",
+                sport="football",
+                description="Betika football odds page for current fixtures and markets.",
+            ),
+            "basketball_today": SourceTarget(
+                name="basketball_today",
+                display_name="Basketball Odds Today",
+                url="https://ke.betika.com/en-ke/sports/basketball-30",
+                sport="basketball",
+                description="Betika basketball odds page for current fixtures and markets.",
             ),
         },
     ),
