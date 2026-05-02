@@ -169,6 +169,13 @@ SOURCES: dict[str, SourceConfig] = {
                 sport="football",
                 description="Mozzart live football fixtures with live score state, extra markets, and 1/X/2 odds.",
             ),
+            "basketball_live": SourceTarget(
+                name="basketball_live",
+                display_name="Basketball Live Odds",
+                url="https://mobile.mozzartbet.co.ke/live?sportId=2",
+                sport="basketball",
+                description="Mozzart live basketball fixtures with live score state, extra markets, and winner odds.",
+            ),
             "live_landing": SourceTarget(
                 name="live_landing",
                 display_name="Live Landing",

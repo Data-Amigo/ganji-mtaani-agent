@@ -3,10 +3,10 @@
 Author: Data-Amigo
 Date: 2026-05-02
 Description:
-This parser module extracts the first stable football odds fields from the
-rendered Mozzart live page HTML. The page is heavily mobile-oriented, so the V1
-parser intentionally works from the rendered body text sequence rather than
-fragile selectors.
+This parser module extracts the first stable football and basketball odds
+fields from the rendered Mozzart live page HTML. The page is heavily mobile-
+oriented, so the V1 parser intentionally works from the rendered body text
+sequence rather than fragile selectors.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from ganji_mtaani_agent.models.mozzart import MozzartFootballOdds
+from ganji_mtaani_agent.models.mozzart import MozzartBasketballOdds, MozzartFootballOdds
 
 
 # =============================================================================
@@ -54,44 +54,34 @@ def _extract_text_lines(html: str) -> list[str]:
 
 
 def _looks_like_league_label(value: str) -> bool:
-    """Return True when a line looks like a Mozzart football league label."""
+    """Return True when a line looks like a Mozzart league label."""
 
-    return bool(re.fullmatch(r"[A-Za-z&.'\- ]+(?:\.\.\.)?\s+\d+", value))
+    return bool(re.fullmatch(r"[A-Za-z&.'\- ]+(?:\.\.\.)?\s+\d+(?:\s+[A-Za-z]+)?", value))
 
 
-# =============================================================================
-# Main Mozzart Football Parser
-# =============================================================================
-def parse_mozzart_football(html: str) -> list[MozzartFootballOdds]:
-    """Parse Mozzart live football odds from rendered page HTML.
-
-    Expected V1 row pattern inside the Football section:
-    - League label (e.g. "England 1")
-    - Status tokens: "R", "H", and a live status like "48:37" or "HT"
-    - Home team
-    - Away team
-    - Four score-state integers
-    - Extra market count like "+224"
-    - Either odds tokens: 1, value, X, value, 2, value
-      or a no-odds message that should be skipped
-    """
+def _parse_live_rows(
+    html: str,
+    sport_section_pattern: str,
+    sport: str,
+) -> list[dict[str, object]]:
+    """Parse repeated live Mozzart rows for a given sport section."""
 
     lines = _extract_text_lines(html)
     if not lines:
         return []
 
     try:
-        start_index = next(i for i, line in enumerate(lines) if re.fullmatch(r"Football - \d+", line)) + 2
+        start_index = next(i for i, line in enumerate(lines) if re.fullmatch(sport_section_pattern, line)) + 1
     except StopIteration:
         return []
 
     index = start_index
-    parsed_rows: list[MozzartFootballOdds] = []
+    parsed_rows: list[dict[str, object]] = []
 
     while index < len(lines):
         line = lines[index]
 
-        if line.startswith("1 2 3 Go To") or line.startswith("Mobile Plus") or line.startswith("T SPORTS"):
+        if line.startswith("Go To Mobile Plus") or line.startswith("Mobile Plus") or line.startswith("T SPORTS"):
             break
 
         if not _looks_like_league_label(line):
@@ -137,22 +127,47 @@ def parse_mozzart_football(html: str) -> list[MozzartFootballOdds]:
 
         raw_tokens = lines[index : index + 17]
         parsed_rows.append(
-            MozzartFootballOdds(
-                source="mozzart",
-                sport="football",
-                league=league,
-                match_status=match_status,
-                home_team=home_team,
-                away_team=away_team,
-                score_text=score_text,
-                extra_market_count=extra_market_count,
-                home_odds=home_odds,
-                draw_odds=draw_odds,
-                away_odds=away_odds,
-                raw_text=" | ".join(raw_tokens),
-                confidence=0.9,
-            )
+            {
+                "source": "mozzart",
+                "sport": sport,
+                "league": league,
+                "match_status": match_status,
+                "home_team": home_team,
+                "away_team": away_team,
+                "score_text": score_text,
+                "extra_market_count": extra_market_count,
+                "home_odds": home_odds,
+                "draw_odds": draw_odds,
+                "away_odds": away_odds,
+                "raw_text": " | ".join(raw_tokens),
+                "confidence": 0.9,
+            }
         )
         index += 17
 
     return parsed_rows
+
+
+# =============================================================================
+# Main Mozzart Parsers
+# =============================================================================
+def parse_mozzart_football(html: str) -> list[MozzartFootballOdds]:
+    """Parse Mozzart live football odds from rendered page HTML."""
+
+    parsed_dicts = _parse_live_rows(
+        html=html,
+        sport_section_pattern=r"Football - \d+",
+        sport="football",
+    )
+    return [MozzartFootballOdds(**row) for row in parsed_dicts]
+
+
+def parse_mozzart_basketball(html: str) -> list[MozzartBasketballOdds]:
+    """Parse Mozzart live basketball odds from rendered page HTML."""
+
+    parsed_dicts = _parse_live_rows(
+        html=html,
+        sport_section_pattern=r"Basketball - \d+",
+        sport="basketball",
+    )
+    return [MozzartBasketballOdds(**row) for row in parsed_dicts]
